@@ -4,7 +4,7 @@ import pygame
 from bullet import Bullet
 from alien import Alien
 
-def check_events(ai_settings, screen, ship, aliens, bullets):
+def check_events(ai_settings, screen, ship, aliens, bullets, play_button, stats):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
@@ -12,6 +12,21 @@ def check_events(ai_settings, screen, ship, aliens, bullets):
             check_keydown_events(event, ai_settings, screen, ship, bullets)
         elif event.type == pygame.KEYUP:
             check_keyup_events(event, ship)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            check_play_button(ai_settings, screen, play_button, ship, aliens, bullets, mouse_x, mouse_y, stats)
+
+
+def check_play_button(ai_settings, screen, play_button, ship, aliens, bullets, mouse_x, mouse_y, stats):
+    button_clicked = play_button.rect.collidepoint(mouse_x, mouse_y)
+    if button_clicked:
+        pygame.mouse.set_visible(False)
+        stats.reset_stats()
+        stats.game_active = True
+        aliens.empty()
+        bullets.empty()
+        create_fleet(ai_settings, screen, ship, aliens)
+        ship.rect.midbottom
 
 
 def check_keydown_events(event, ai_settings, screen, ship, bullets):
@@ -32,20 +47,24 @@ def check_keyup_events(event, ship):
         ship.moving_left = False
 
 
-def update_screen(ai_settings, screen, ship, aliens, bullets):
+def update_screen(ai_settings, screen, ship, aliens, bullets, play_button, stats):
     screen.fill(ai_settings.bg_color)
     for bullet in bullets.sprites():
         bullet.draw_bullet()
     ship.bltime()
     aliens.draw(screen)
+    if not stats.game_active:
+        play_button.draw_button()
     pygame.display.flip()
 
 
-def update_bullets(ai_settings, screen, ship, aliens, bullets):
+def update_bullets(ai_settings, screen, ship, aliens, bullets, stats):
     bullets.update()
     for bullet in bullets.copy():
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
+
+    check_bullet_alien_collisions(ai_settings, screen, ship, aliens, bullets)
 
 
 def fire_bullet(ai_settings, screen, ship, bullets):
@@ -54,7 +73,11 @@ def fire_bullet(ai_settings, screen, ship, bullets):
         bullets.add(new_bullet)
 
 
-def update_aliens(ai_settings, screen, ship, aliens, bullets):
+def check_bullet_alien_collisions(ai_settings, screen, ship, aliens, bullets):
+    collisions = pygame.sprite.groupcollide(bullets, aliens, True, True)
+
+
+def update_aliens(ai_settings, screen, ship, aliens, bullets, stats):
     check_fleet_edges(ai_settings, aliens)
     aliens.update()
 
@@ -101,3 +124,24 @@ def create_fleet(ai_settings, screen, ship, aliens):
     for row_number in range(number_rows):
         for alien_number in range(number_aliens_x):
             create_alien(ai_settings, screen, aliens, alien_number, row_number)
+
+
+def ship_hit(ai_settings, screen, ship, aliens, bullets, stats):
+    if stats.ships_left > 0:
+        stats.ships_left -= 1
+    else:
+        stats.game_active = False
+        pygame.mouse.set_visible(True)
+
+    aliens.empty()
+    bullets.empty()
+    create_fleet(ai_settings, screen, ship, aliens)
+    ship.rect.midbottom()
+
+
+def check_aliens_bottom(ai_settings, screen, ship, aliens, bullets, stats):
+    screen_rect = screen.get_rect()
+    for alien in aliens.sprites():
+        if alien.rect.bottom >= screen_rect.bottom:
+            ship_hit(ai_settings, screen, ship, aliens, stats)
+            break
