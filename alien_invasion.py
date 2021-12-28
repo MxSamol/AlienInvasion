@@ -1,44 +1,25 @@
-import sys
 import pygame
+
 from settings import Settings
+import game_functions
 from ship import Ship
+from pygame.sprite import Group
 
-class AlienInvasion:
-    def __init__(self):
-        pygame.init()
-        self.settings = Settings()
-        self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
-        pygame.display.set_caption("Alien Invasion")
-        icon = pygame.image.load('images/icon.bmp')
-        pygame.display.set_icon(icon)
-        self.ship = Ship(self.screen)
+def run_game():
+    pygame.init()
+    ai_settings = Settings()
+    screen = pygame.display.set_mode((ai_settings.screen_width, ai_settings.screen_height))
+    pygame.display.set_caption("Alien Invasion")
+    icon = pygame.image.load('images/icon.bmp')
+    pygame.display.set_icon(icon)
 
-    def run_game(self):
-        while True:
-            self._check_events()
-            self.ship.update()
-            self._update_screen()
+    ship = Ship(ai_settings, screen)
+    bullets = Group()
 
-    def _check_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
-                    self.ship.moving_right = True
-                elif event.key == pygame.K_LEFT:
-                    self.ship.moving_left = True
-            elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_RIGHT:
-                    self.ship.moving_right = False
-                elif event.key == pygame.K_LEFT:
-                    self.ship.moving_left = False
+    while True:
+        game_functions.check_events(ai_settings, screen, ship, bullets)
+        ship.update()
+        game_functions.update_bullets(ai_settings, screen, ship, bullets)
+        game_functions.update_screen(ai_settings, screen, ship, bullets)
 
-    def _update_screen(self):
-        self.screen.fill(self.settings.bg_color)
-        self.ship.bltime()
-        pygame.display.flip()
-
-if __name__ == '__main__':
-    ai = AlienInvasion()
-    ai.run_game()
+run_game()
